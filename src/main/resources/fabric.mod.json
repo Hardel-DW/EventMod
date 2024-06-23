@@ -1,0 +1,30 @@
+{
+    "schemaVersion": 1,
+    "id": "eventmod",
+    "version": "${version}",
+    "name": "Event Mod",
+    "description": "This mod adds a new Funny event to the game, like finding a head in the world.",
+    "authors": [
+        "Hardel"
+    ],
+    "contact": {
+        "repo": "https://github.com/Hardel-DW/EventMod"
+    },
+    "license": "All-Rights-Reserved",
+    "icon": "assets/eventmod/icon.png",
+    "environment": "server",
+    "entrypoints": {
+        "client": [],
+        "main": [
+            "com.hardel.eventmod.EventMod"
+        ]
+    },
+    "mixins": [
+        "eventmod.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=${loader_version}",
+        "fabric": "*",
+        "minecraft": "${minecraft_version}"
+    }
+}

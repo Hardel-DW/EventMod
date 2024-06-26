@@ -3,6 +3,7 @@ package com.hardel.eventmod.event.finder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.hardel.eventmod.EventMod;
 import com.hardel.eventmod.event.EventData;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.particle.SimpleParticleType;
@@ -25,7 +26,6 @@ public record FinderConfigData(
         SimpleParticleType particle
 ) {
     private static final List<FinderConfigData> instances = new ArrayList<>();
-    private static final String key = "finder";
 
     public static Builder builder() {
         return new Builder();
@@ -40,7 +40,7 @@ public record FinderConfigData(
     }
 
     private static void loadConfigData() {
-        JsonArray loadedConfigs = EventData.loadConfigEventData(key);
+        JsonArray loadedConfigs = EventData.loadConfigEventData(EventMod.finderKey);
         List<FinderConfigData> configs = new ArrayList<>();
 
         for (JsonElement element : loadedConfigs) {
@@ -80,7 +80,7 @@ public record FinderConfigData(
             finderArray.add(configData);
         }
 
-        EventData.saveConfigEventData(key, finderArray);
+        EventData.saveConfigEventData(EventMod.finderKey, finderArray);
     }
 
     public static boolean addNewConfig(FinderConfigData config) {

@@ -1,8 +1,9 @@
-package com.hardel.eventmod.event.elytra;
+package com.hardel.eventmod.event.parkour;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.hardel.eventmod.EventMod;
 import com.hardel.eventmod.event.EventData;
 import com.hardel.eventmod.utils.BlockUtils;
 import net.minecraft.registry.DynamicRegistryManager;
@@ -14,7 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public record ElytraConfigData(
+public record ParkourConfigData(
         String variant,
         Text failMessage,
         List<CheckpointData> checkpoints,
@@ -22,14 +23,13 @@ public record ElytraConfigData(
         BlockPos start,
         BlockPos end
 ) {
-    private static final List<ElytraConfigData> instances = new ArrayList<>();
-    private static final String key = "elytra";
+    private static final List<ParkourConfigData> instances = new ArrayList<>();
 
-    public static ElytraConfigData.Builder builder() {
-        return new ElytraConfigData.Builder();
+    public static ParkourConfigData.Builder builder() {
+        return new ParkourConfigData.Builder();
     }
 
-    public static List<ElytraConfigData> getInstance() {
+    public static List<ParkourConfigData> getInstance() {
         if (instances.isEmpty()) {
             loadConfigData();
         }
@@ -38,8 +38,8 @@ public record ElytraConfigData(
     }
 
     private static void loadConfigData() {
-        JsonArray loadedConfigs = EventData.loadConfigEventData(key);
-        List<ElytraConfigData> configs = new ArrayList<>();
+        JsonArray loadedConfigs = EventData.loadConfigEventData(EventMod.ParkourKey);
+        List<ParkourConfigData> configs = new ArrayList<>();
 
         for (JsonElement element : loadedConfigs) {
             JsonObject configData = element.getAsJsonObject();
@@ -53,7 +53,7 @@ public record ElytraConfigData(
             JsonArray endArray = configData.getAsJsonArray("end");
             BlockPos end = new BlockPos(endArray.get(0).getAsInt(), endArray.get(1).getAsInt(), endArray.get(2).getAsInt());
 
-            configs.add(ElytraConfigData.builder().variant(variant).failMessage(failMessage).checkpoints(checkpoints).winCondition(winCondition).start(start).end(end).build());
+            configs.add(ParkourConfigData.builder().variant(variant).failMessage(failMessage).checkpoints(checkpoints).winCondition(winCondition).start(start).end(end).build());
         }
 
         instances.clear();
@@ -62,7 +62,7 @@ public record ElytraConfigData(
 
     private static void saveConfigData() {
         JsonArray configArray = new JsonArray();
-        for (ElytraConfigData config : instances) {
+        for (ParkourConfigData config : instances) {
             JsonObject configData = new JsonObject();
             configData.addProperty("variant", config.variant());
             configData.addProperty("fail_message", Text.Serialization.toJsonString(config.failMessage(), DynamicRegistryManager.EMPTY));
@@ -74,10 +74,10 @@ public record ElytraConfigData(
             configArray.add(configData);
         }
 
-        EventData.saveConfigEventData(key, configArray);
+        EventData.saveConfigEventData(EventMod.ParkourKey, configArray);
     }
 
-    public static boolean addNewConfig(ElytraConfigData config) {
+    public static boolean addNewConfig(ParkourConfigData config) {
         if (getInstance().stream().noneMatch(finderConfig -> finderConfig.variant().equals(config.variant()))) {
             instances.add(config);
             saveConfigData();
@@ -96,14 +96,14 @@ public record ElytraConfigData(
         return removed;
     }
 
-    public static boolean modifyExistingConfig(String variant, ElytraConfigData newConfig) {
-        Optional<ElytraConfigData> config = getInstance().stream()
+    public static boolean modifyExistingConfig(String variant, ParkourConfigData newConfig) {
+        Optional<ParkourConfigData> config = getInstance().stream()
                 .filter(configData -> configData.variant().equals(variant))
                 .findFirst();
 
         if (config.isPresent()) {
-            ElytraConfigData currentConfig = config.get();
-            ElytraConfigData updatedConfig = new ElytraConfigData.Builder().from(currentConfig).from(newConfig).build();
+            ParkourConfigData currentConfig = config.get();
+            ParkourConfigData updatedConfig = new ParkourConfigData.Builder().from(currentConfig).from(newConfig).build();
 
             instances.set(instances.indexOf(currentConfig), updatedConfig);
             saveConfigData();
@@ -114,12 +114,12 @@ public record ElytraConfigData(
     }
 
     public static boolean addCheckpoint(String variant, CheckpointData checkpoint) {
-        Optional<ElytraConfigData> config = getInstance().stream()
+        Optional<ParkourConfigData> config = getInstance().stream()
                 .filter(configData -> configData.variant().equals(variant))
                 .findFirst();
 
         if (config.isPresent()) {
-            ElytraConfigData currentConfig = config.get();
+            ParkourConfigData currentConfig = config.get();
 
             List<CheckpointData> checkpoints = new ArrayList<>(currentConfig.checkpoints());
             if (checkpoints.stream().anyMatch(checkpointData -> Objects.equals(checkpointData.index(), checkpoint.index()))) {
@@ -127,7 +127,7 @@ public record ElytraConfigData(
             }
 
             checkpoints.add(checkpoint);
-            ElytraConfigData updatedConfig = new ElytraConfigData.Builder().from(currentConfig).checkpoints(checkpoints).build();
+            ParkourConfigData updatedConfig = new ParkourConfigData.Builder().from(currentConfig).checkpoints(checkpoints).build();
 
             instances.set(instances.indexOf(currentConfig), updatedConfig);
             saveConfigData();
@@ -138,16 +138,16 @@ public record ElytraConfigData(
     }
 
     public static boolean removeCheckpoint(String variant, int index) {
-        Optional<ElytraConfigData> config = getInstance().stream()
+        Optional<ParkourConfigData> config = getInstance().stream()
                 .filter(configData -> configData.variant().equals(variant))
                 .findFirst();
 
         if (config.isPresent()) {
-            ElytraConfigData currentConfig = config.get();
+            ParkourConfigData currentConfig = config.get();
             List<CheckpointData> checkpoints = new ArrayList<>(currentConfig.checkpoints());
             checkpoints.removeIf(checkpoint -> checkpoint.index() == index);
 
-            ElytraConfigData updatedConfig = new ElytraConfigData.Builder().from(currentConfig).checkpoints(checkpoints).build();
+            ParkourConfigData updatedConfig = new ParkourConfigData.Builder().from(currentConfig).checkpoints(checkpoints).build();
             instances.set(instances.indexOf(currentConfig), updatedConfig);
             saveConfigData();
             return true;
@@ -157,10 +157,10 @@ public record ElytraConfigData(
     }
 
     public static boolean modifyCheckpoint(String variant, int index, CheckpointData newCheckpoint) {
-        Optional<ElytraConfigData> config = getInstance().stream().filter(configData -> configData.variant().equals(variant)).findFirst();
+        Optional<ParkourConfigData> config = getInstance().stream().filter(configData -> configData.variant().equals(variant)).findFirst();
 
         if (config.isPresent()) {
-            ElytraConfigData currentConfig = config.get();
+            ParkourConfigData currentConfig = config.get();
             List<CheckpointData> checkpoints = new ArrayList<>(currentConfig.checkpoints());
             Optional<CheckpointData> checkpointToUpdate = checkpoints.stream().filter(checkpoint -> checkpoint.index() == index).findFirst();
 
@@ -169,7 +169,7 @@ public record ElytraConfigData(
                 CheckpointData updatedCheckpoint = new CheckpointData.Builder().index(index).from(currentCheckpoint).from(newCheckpoint).build();
 
                 checkpoints.set(checkpoints.indexOf(currentCheckpoint), updatedCheckpoint);
-                ElytraConfigData updatedConfig = new ElytraConfigData.Builder().from(currentConfig).checkpoints(checkpoints).build();
+                ParkourConfigData updatedConfig = new ParkourConfigData.Builder().from(currentConfig).checkpoints(checkpoints).build();
 
                 instances.set(instances.indexOf(currentConfig), updatedConfig);
                 saveConfigData();
@@ -190,7 +190,7 @@ public record ElytraConfigData(
         private BlockPos start;
         private BlockPos end;
 
-        public ElytraConfigData.Builder withDefaults(String variant) {
+        public ParkourConfigData.Builder withDefaults(String variant) {
             this.start = BlockPos.ORIGIN;
             this.end = BlockPos.ORIGIN;
             this.variant = variant;
@@ -200,7 +200,7 @@ public record ElytraConfigData(
             return this;
         }
 
-        public ElytraConfigData.Builder from(ElytraConfigData config) {
+        public ParkourConfigData.Builder from(ParkourConfigData config) {
             this.variant = Optional.ofNullable(config.variant()).orElse(this.variant);
             this.failMessage = Optional.ofNullable(config.failMessage()).orElse(this.failMessage);
             this.checkpoints = Optional.ofNullable(config.checkpoints()).orElse(this.checkpoints);
@@ -210,38 +210,38 @@ public record ElytraConfigData(
             return this;
         }
 
-        public ElytraConfigData.Builder variant(String variant) {
+        public ParkourConfigData.Builder variant(String variant) {
             this.variant = variant;
             return this;
         }
 
-        public ElytraConfigData.Builder failMessage(Text failMessage) {
+        public ParkourConfigData.Builder failMessage(Text failMessage) {
             this.failMessage = failMessage;
             return this;
         }
 
-        public ElytraConfigData.Builder checkpoints(List<CheckpointData> checkpoints) {
+        public ParkourConfigData.Builder checkpoints(List<CheckpointData> checkpoints) {
             this.checkpoints = checkpoints;
             return this;
         }
 
-        public ElytraConfigData.Builder winCondition(WinCondition winCondition) {
+        public ParkourConfigData.Builder winCondition(WinCondition winCondition) {
             this.winCondition = winCondition;
             return this;
         }
 
-        public ElytraConfigData.Builder start(BlockPos start) {
+        public ParkourConfigData.Builder start(BlockPos start) {
             this.start = start;
             return this;
         }
 
-        public ElytraConfigData.Builder end(BlockPos end) {
+        public ParkourConfigData.Builder end(BlockPos end) {
             this.end = end;
             return this;
         }
 
-        public ElytraConfigData build() {
-            return new ElytraConfigData(variant, failMessage, checkpoints, winCondition, start, end);
+        public ParkourConfigData build() {
+            return new ParkourConfigData(variant, failMessage, checkpoints, winCondition, start, end);
         }
     }
 }

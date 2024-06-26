@@ -1,4 +1,4 @@
-package com.hardel.eventmod.event.elytra;
+package com.hardel.eventmod.event.parkour;
 
 public enum PortalType {
     CHECKPOINT,

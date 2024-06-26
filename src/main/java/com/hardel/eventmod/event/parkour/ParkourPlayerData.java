@@ -1,15 +1,17 @@
-package com.hardel.eventmod.event.elytra;
+package com.hardel.eventmod.event.parkour;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.hardel.eventmod.EventMod;
 import com.hardel.eventmod.event.EventData;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.*;
 
-public record ElytraPlayerData(
+public record ParkourPlayerData(
         Integer checkpoints,
         String variant,
         Boolean isFinished,
@@ -17,17 +19,16 @@ public record ElytraPlayerData(
         Integer finishTicks,
         Boolean isParticipating
 ) {
-    private static final Map<UUID, List<ElytraPlayerData>> instances = new HashMap<>();
-    private static final String key = "elytra";
+    private static final Map<UUID, List<ParkourPlayerData>> instances = new HashMap<>();
 
-    public static ElytraPlayerData getInstance(UUID playerUuid, String variant) {
+    public static ParkourPlayerData getInstance(UUID playerUuid, String variant) {
         return getInstances(playerUuid).stream()
                 .filter(data -> data.variant.equals(variant))
                 .findFirst()
-                .orElse(new ElytraPlayerData.Builder(variant).build());
+                .orElse(new ParkourPlayerData.Builder(variant).build());
     }
 
-    private static List<ElytraPlayerData> getInstances(UUID playerUuid) {
+    private static List<ParkourPlayerData> getInstances(UUID playerUuid) {
         if (!instances.containsKey(playerUuid)) {
             loadPlayerData(playerUuid);
         }
@@ -41,8 +42,8 @@ public record ElytraPlayerData(
     }
 
     private static void loadPlayerData(UUID playerUuid) {
-        JsonArray loadedConfigs = EventData.loadPlayerEventData(playerUuid, key);
-        List<ElytraPlayerData> data = new ArrayList<>();
+        JsonArray loadedConfigs = EventData.loadPlayerEventData(playerUuid, EventMod.ParkourKey);
+        List<ParkourPlayerData> data = new ArrayList<>();
 
         for (JsonElement element : loadedConfigs) {
             JsonObject entry = element.getAsJsonObject();
@@ -53,20 +54,20 @@ public record ElytraPlayerData(
             Integer finishTicks = Optional.of(entry.get("finishTicks").getAsInt()).orElse(null);
             Boolean isParticipating = Optional.of(entry.get("isParticipating").getAsBoolean()).orElse(null);
 
-            data.add(new ElytraPlayerData(checkpoints, variant, isFinished, startTicks, finishTicks, isParticipating));
+            data.add(new ParkourPlayerData(checkpoints, variant, isFinished, startTicks, finishTicks, isParticipating));
         }
 
         instances.put(playerUuid, data);
     }
 
     private static void savePlayerData(UUID playerUuid) {
-        List<ElytraPlayerData> instance = instances.get(playerUuid);
+        List<ParkourPlayerData> instance = instances.get(playerUuid);
         if (instance == null) {
             instance = new ArrayList<>();
         }
 
         JsonArray data = new JsonArray();
-        for (ElytraPlayerData entry : instance) {
+        for (ParkourPlayerData entry : instance) {
             if (entry.variant == null) {
                 continue;
             }
@@ -81,7 +82,7 @@ public record ElytraPlayerData(
             data.add(object);
         }
 
-        EventData.savePlayerEventData(playerUuid, key, data);
+        EventData.savePlayerEventData(playerUuid, EventMod.ParkourKey, data);
     }
 
 
@@ -92,8 +93,8 @@ public record ElytraPlayerData(
      * @return the finish status of the player
      */
     public static Text getPlayerDetail(String variant, UUID playerUuid) {
-        List<ElytraPlayerData> instance = getInstances(playerUuid);
-        for (ElytraPlayerData data : instance) {
+        List<ParkourPlayerData> instance = getInstances(playerUuid);
+        for (ParkourPlayerData data : instance) {
             if (data.variant.equals(variant)) {
                 return Text.of("Checkpoints: " + data.checkpoints + ", Finished: " + data.isFinished + ", Start: " + data.startTicks + ", Finish: " + data.finishTicks);
             }
@@ -110,7 +111,7 @@ public record ElytraPlayerData(
      */
     public static List<UUID> getRanking(String variant, int howMany) {
         // Dirty code, but it works
-        List<UUID> players = EventData.forceLoadAllPlayerEventData(key);
+        List<UUID> players = EventData.forceLoadAllPlayerEventData(EventMod.ParkourKey);
         for (UUID playerUuid : players) {
             getInstances(playerUuid);
         }
@@ -123,17 +124,17 @@ public record ElytraPlayerData(
 
         // Check by finish status true, and the
         // Get the config from the variant
-        ElytraConfigData config = ElytraConfigData.getInstance().stream().filter(c -> c.variant().equals(variant)).findFirst().orElse(null);
+        ParkourConfigData config = ParkourConfigData.getInstance().stream().filter(c -> c.variant().equals(variant)).findFirst().orElse(null);
         WinCondition winCondition = config != null ? config.winCondition() : WinCondition.FIRST_TO_FINISH;
 
         // For FIRST_TO_FINISH is the player with status isFinished true and lower endTicks
         // For FASTEST_TIME is the player with status isFinished true and lower time between startTicks and finishTicks
         playerUuids.sort((uuid1, uuid2) -> {
             int compare = 0;
-            List<ElytraPlayerData> instance1 = getInstances(uuid1);
-            List<ElytraPlayerData> instance2 = getInstances(uuid2);
-            ElytraPlayerData data1 = instance1.stream().filter(data -> data.variant.equals(variant)).findFirst().orElse(null);
-            ElytraPlayerData data2 = instance2.stream().filter(data -> data.variant.equals(variant)).findFirst().orElse(null);
+            List<ParkourPlayerData> instance1 = getInstances(uuid1);
+            List<ParkourPlayerData> instance2 = getInstances(uuid2);
+            ParkourPlayerData data1 = instance1.stream().filter(data -> data.variant.equals(variant)).findFirst().orElse(null);
+            ParkourPlayerData data2 = instance2.stream().filter(data -> data.variant.equals(variant)).findFirst().orElse(null);
 
             if (data1 == null || data2 == null) {
                 return 0;
@@ -167,7 +168,7 @@ public record ElytraPlayerData(
      * @param variant the variant to reset
      */
     public static void resetByVariant(String variant, UUID playerUuid) {
-        List<ElytraPlayerData> instance = instances.computeIfAbsent(playerUuid, k -> new ArrayList<>());
+        List<ParkourPlayerData> instance = instances.computeIfAbsent(playerUuid, k -> new ArrayList<>());
         instance.removeIf(data -> variant == null || Objects.equals(data.variant, variant));
 
         instances.put(playerUuid, instance);
@@ -177,8 +178,8 @@ public record ElytraPlayerData(
     /**
      * Update the start ticks of the player
      */
-    private static void updatePlayer(String variant, UUID playerUuid, ElytraPlayerData updatedData) {
-        List<ElytraPlayerData> instance = getInstances(playerUuid);
+    private static void updatePlayer(String variant, UUID playerUuid, ParkourPlayerData updatedData) {
+        List<ParkourPlayerData> instance = getInstances(playerUuid);
         instance.removeIf(data -> data.variant.equals(variant));
         instance.add(updatedData);
 
@@ -193,16 +194,16 @@ public record ElytraPlayerData(
      * @param playerUuid  the player's UUID
      */
     public static CheckpointAction updateCheckpoints(String variant, UUID playerUuid, int checkpoints) {
-        ElytraPlayerData instance = getInstance(playerUuid, variant);
+        ParkourPlayerData instance = getInstance(playerUuid, variant);
         if (instance.checkpoints() == null || instance.checkpoints() == checkpoints || instance.isFinished) {
             return CheckpointAction.SAME;
         }
 
         // Get the nearest index of the checkpoints
-        Optional<Integer> nearestIndex = ElytraConfigData.getInstance().stream()
+        Optional<Integer> nearestIndex = ParkourConfigData.getInstance().stream()
                 .filter(c -> c.variant().equals(variant))
                 .findFirst()
-                .map(ElytraConfigData::checkpoints)
+                .map(ParkourConfigData::checkpoints)
                 .orElse(new ArrayList<>())
                 .stream()
                 .map(CheckpointData::index)
@@ -221,8 +222,45 @@ public record ElytraPlayerData(
         return CheckpointAction.NOT_GOOD_PATH;
     }
 
+
+    /**
+     * Teleport player on the last checkpoint
+     *
+     * @param variant the variant of the player
+     * @param player  the player's UUID
+     * @return Teleport the player on the last checkpoint
+     */
+    public static BlockPos teleportLastCheckpoint(String variant, ServerPlayerEntity player) {
+        int currentPlayerCheckpoint = getInstance(player.getUuid(), variant).checkpoints();
+        List<ParkourConfigData> configs = ParkourConfigData.getInstance();
+
+        for (ParkourConfigData config : configs) {
+            for (CheckpointData checkpoint : config.checkpoints()) {
+                EventMod.LOGGER.info("Checkpoint: {}", checkpoint);
+                if (config.variant().equals(variant)) {
+                    EventMod.LOGGER.info("Last checkpoint: {}", checkpoint);
+                    if (currentPlayerCheckpoint == checkpoint.index()) {
+                        EventMod.LOGGER.info("Teleporting player to last checkpoint");
+                        return checkpoint.respawn();
+                    }
+                }
+            }
+        }
+
+        EventMod.LOGGER.info("Player has not taken the last checkpoint");
+        return BlockPos.ORIGIN;
+    }
+
+    /**
+     * Set the player to participating or not
+     *
+     * @param variant         the variant of the player
+     * @param playerUuid      the player's UUID
+     * @param isParticipating the new participating status
+     * @return Allow to set the participating status
+     */
     public static boolean setParticipating(String variant, UUID playerUuid, boolean isParticipating) {
-        ElytraPlayerData instance = getInstance(playerUuid, variant);
+        ParkourPlayerData instance = getInstance(playerUuid, variant);
         if (instance.isParticipating() == isParticipating) {
             return false;
         }
@@ -240,7 +278,7 @@ public record ElytraPlayerData(
      * @return Allow to start the parkour
      */
     public static CheckpointAction startCheckpoint(String variant, UUID playerUuid, int ticks, int checkpoints) {
-        ElytraPlayerData instance = getInstance(playerUuid, variant);
+        ParkourPlayerData instance = getInstance(playerUuid, variant);
 
         if (instance.checkpoints == null || instance.isFinished || !instance.isParticipating) {
             updatePlayer(variant, playerUuid, builder(variant).from(instance).isParticipating(true).isFinished(false).finishTicks(-1).checkpoints(checkpoints).startTicks(ticks).build());
@@ -259,12 +297,12 @@ public record ElytraPlayerData(
      * @return Finish the parkour
      */
     public static CheckpointAction finishCheckpoint(String variant, ServerPlayerEntity player, int ticks, int checkpoint) {
-        ElytraPlayerData instance = getInstance(player.getUuid(), variant);
+        ParkourPlayerData instance = getInstance(player.getUuid(), variant);
 
         boolean hasTakenPenultimateCheckpoint = false;
-        List<ElytraConfigData> configs = ElytraConfigData.getInstance();
+        List<ParkourConfigData> configs = ParkourConfigData.getInstance();
 
-        for (ElytraConfigData config : configs) {
+        for (ParkourConfigData config : configs) {
             if (config.variant().equals(variant)) {
                 List<CheckpointData> checkpoints = new ArrayList<>(config.checkpoints());
                 checkpoints.sort(Comparator.comparingInt(CheckpointData::index));
@@ -300,7 +338,7 @@ public record ElytraPlayerData(
         private Integer finishTicks;
         private Boolean isParticipating;
 
-        public ElytraPlayerData.Builder from(ElytraPlayerData data) {
+        public ParkourPlayerData.Builder from(ParkourPlayerData data) {
             this.checkpoints = Optional.ofNullable(data.checkpoints()).orElse(this.checkpoints);
             this.isFinished = Optional.ofNullable(data.isFinished()).orElse(this.isFinished);
             this.startTicks = Optional.ofNullable(data.startTicks()).orElse(this.startTicks);
@@ -313,33 +351,33 @@ public record ElytraPlayerData(
             this.variant = variant;
         }
 
-        public ElytraPlayerData.Builder checkpoints(int checkpoints) {
+        public ParkourPlayerData.Builder checkpoints(int checkpoints) {
             this.checkpoints = checkpoints;
             return this;
         }
 
-        public ElytraPlayerData.Builder isFinished(boolean isFinished) {
+        public ParkourPlayerData.Builder isFinished(boolean isFinished) {
             this.isFinished = isFinished;
             return this;
         }
 
-        public ElytraPlayerData.Builder startTicks(int startTicks) {
+        public ParkourPlayerData.Builder startTicks(int startTicks) {
             this.startTicks = startTicks;
             return this;
         }
 
-        public ElytraPlayerData.Builder finishTicks(int finishTicks) {
+        public ParkourPlayerData.Builder finishTicks(int finishTicks) {
             this.finishTicks = finishTicks;
             return this;
         }
 
-        public ElytraPlayerData.Builder isParticipating(boolean isParticipating) {
+        public ParkourPlayerData.Builder isParticipating(boolean isParticipating) {
             this.isParticipating = isParticipating;
             return this;
         }
 
-        public ElytraPlayerData build() {
-            return new ElytraPlayerData(checkpoints, variant, isFinished, startTicks, finishTicks, isParticipating);
+        public ParkourPlayerData build() {
+            return new ParkourPlayerData(checkpoints, variant, isFinished, startTicks, finishTicks, isParticipating);
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.hardel.eventmod.event.elytra;
+package com.hardel.eventmod.event.parkour;
 
 import com.hardel.eventmod.utils.BlockUtils;
 import com.hardel.eventmod.utils.ParticleUtils;
@@ -9,23 +9,23 @@ import net.minecraft.text.Text;
 
 import java.util.List;
 
-public class ElytraAction {
+public class ParkourAction {
     public static void onTick(MinecraftServer server) {
-        List<ElytraConfigData> instances = ElytraConfigData.getInstance();
+        List<ParkourConfigData> instances = ParkourConfigData.getInstance();
 
         server.getPlayerManager().getPlayerList().forEach(player -> {
-            for (ElytraConfigData config : instances) {
+            for (ParkourConfigData config : instances) {
                 List<CheckpointData> checkpoints = config.checkpoints();
 
                 for (CheckpointData checkpoint : checkpoints) {
                     if (BlockUtils.isPlayerInZone(player, checkpoint.start(), checkpoint.end())) {
                         CheckpointAction response = switch (checkpoint.type()) {
                             case START ->
-                                    ElytraPlayerData.startCheckpoint(config.variant(), player.getUuid(), server.getTicks(), checkpoint.index());
+                                    ParkourPlayerData.startCheckpoint(config.variant(), player.getUuid(), server.getTicks(), checkpoint.index());
                             case END ->
-                                    ElytraPlayerData.finishCheckpoint(config.variant(), player, server.getTicks(), checkpoint.index());
+                                    ParkourPlayerData.finishCheckpoint(config.variant(), player, server.getTicks(), checkpoint.index());
                             case CHECKPOINT ->
-                                    ElytraPlayerData.updateCheckpoints(config.variant(), player.getUuid(), checkpoint.index());
+                                    ParkourPlayerData.updateCheckpoints(config.variant(), player.getUuid(), checkpoint.index());
                         };
 
                         switch (response) {
@@ -38,13 +38,13 @@ public class ElytraAction {
                         }
                     }
 
-                    ElytraPlayerData instance = ElytraPlayerData.getInstance(player.getUuid(), config.variant());
+                    ParkourPlayerData instance = ParkourPlayerData.getInstance(player.getUuid(), config.variant());
                     if (instance.isParticipating() == null) {
                         continue;
                     }
 
                     if (!(BlockUtils.isPlayerInZone(player, config.start(), config.end())) && instance.isParticipating()) {
-                        ElytraPlayerData.setParticipating(config.variant(), player.getUuid(), false);
+                        ParkourPlayerData.setParticipating(config.variant(), player.getUuid(), false);
                     }
 
                     if (instance.isParticipating() && !instance.isFinished()) {

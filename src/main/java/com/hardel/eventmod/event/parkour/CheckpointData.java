@@ -1,4 +1,4 @@
-package com.hardel.eventmod.event.elytra;
+package com.hardel.eventmod.event.parkour;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -18,6 +18,7 @@ import java.util.Optional;
 public record CheckpointData(
         BlockPos start,
         BlockPos end,
+        BlockPos respawn,
         Integer index,
         PortalType type,
         Identifier sound,
@@ -41,6 +42,7 @@ public record CheckpointData(
             JsonObject checkpointObject = new JsonObject();
             checkpointObject.add("start", BlockUtils.posToJson(checkpoint.start()));
             checkpointObject.add("end", BlockUtils.posToJson(checkpoint.end()));
+            checkpointObject.add("respawn", BlockUtils.posToJson(checkpoint.respawn()));
             checkpointObject.addProperty("index", checkpoint.index());
             checkpointObject.addProperty("type", checkpoint.type().name());
             checkpointObject.addProperty("sound", checkpoint.sound().toString());
@@ -69,13 +71,16 @@ public record CheckpointData(
             JsonArray endArray = checkpointObject.getAsJsonArray("end");
             BlockPos end = new BlockPos(endArray.get(0).getAsInt(), endArray.get(1).getAsInt(), endArray.get(2).getAsInt());
 
+            JsonArray respawnArray = checkpointObject.getAsJsonArray("respawn");
+            BlockPos respawn = new BlockPos(respawnArray.get(0).getAsInt(), respawnArray.get(1).getAsInt(), respawnArray.get(2).getAsInt());
+
             int index = checkpointObject.get("index").getAsInt();
             PortalType type = PortalType.valueOf(checkpointObject.get("type").getAsString());
             Identifier sound = Identifier.of(checkpointObject.get("sound").getAsString());
 
             Text successMessage = Text.Serialization.fromJson(checkpointObject.get("success_message").getAsString(), DynamicRegistryManager.EMPTY);
 
-            checkpoints.add(builder().start(start).end(end).index(index).type(type).sound(sound).successMessage(successMessage).build());
+            checkpoints.add(builder().start(start).end(end).respawn(respawn).index(index).type(type).sound(sound).successMessage(successMessage).build());
         }
 
         return checkpoints;
@@ -84,6 +89,7 @@ public record CheckpointData(
     public static class Builder {
         private BlockPos start;
         private BlockPos end;
+        private BlockPos respawn;
         private Integer index;
         private PortalType type;
         private Identifier sound;
@@ -99,6 +105,7 @@ public record CheckpointData(
         public Builder from(CheckpointData checkpoint) {
             this.start = Optional.ofNullable(checkpoint.start()).orElse(this.start);
             this.end = Optional.ofNullable(checkpoint.end()).orElse(this.end);
+            this.respawn = Optional.ofNullable(checkpoint.respawn()).orElse(this.respawn);
             this.index = Optional.ofNullable(checkpoint.index()).orElse(this.index);
             this.type = Optional.ofNullable(checkpoint.type()).orElse(this.type);
             this.sound = Optional.ofNullable(checkpoint.sound()).orElse(this.sound);
@@ -109,10 +116,16 @@ public record CheckpointData(
         public Builder withDefaults() {
             this.start = BlockPos.ORIGIN;
             this.end = BlockPos.ORIGIN;
+            this.respawn = BlockPos.ORIGIN;
             this.index = 0;
             this.type = PortalType.CHECKPOINT;
             this.sound = Identifier.of("entity.experience_orb.pickup");
             this.successMessage = Text.of("Continue to the next checkpoint!");
+            return this;
+        }
+
+        public Builder respawn(BlockPos respawn) {
+            this.respawn = respawn;
             return this;
         }
 
@@ -147,7 +160,7 @@ public record CheckpointData(
         }
 
         public CheckpointData build() {
-            return new CheckpointData(start, end, index, type, sound, successMessage, particle);
+            return new CheckpointData(start, end, respawn, index, type, sound, successMessage, particle);
         }
     }
 }

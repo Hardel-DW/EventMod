@@ -3,6 +3,7 @@ package com.hardel.eventmod.event.finder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.hardel.eventmod.EventMod;
 import com.hardel.eventmod.event.EventData;
 import net.minecraft.util.math.BlockPos;
 
@@ -10,7 +11,6 @@ import java.util.*;
 
 public class FinderPlayerData {
     private static final Map<UUID, List<FinderPlayerData>> instances = new HashMap<>();
-    private static final String key = "finder";
     private final BlockPos pos;
     private final String variant;
 
@@ -29,7 +29,7 @@ public class FinderPlayerData {
     }
 
     private static void loadPlayerData(UUID playerUuid) {
-        JsonArray loadedConfigs = EventData.loadPlayerEventData(playerUuid, key);
+        JsonArray loadedConfigs = EventData.loadPlayerEventData(playerUuid, EventMod.finderKey);
         List<FinderPlayerData> data = new ArrayList<>();
 
         for (JsonElement element : loadedConfigs) {
@@ -67,7 +67,7 @@ public class FinderPlayerData {
             data.add(object);
         }
 
-        EventData.savePlayerEventData(playerUuid, key, data);
+        EventData.savePlayerEventData(playerUuid, EventMod.finderKey, data);
         loadPlayerData(playerUuid);
     }
 

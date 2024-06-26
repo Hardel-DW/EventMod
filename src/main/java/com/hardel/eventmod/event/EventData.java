@@ -4,6 +4,7 @@ import com.google.gson.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class EventData {
-    private static final Logger LOGGER = LogManager.getLogger(EventData.class);
+    public static final Logger LOGGER = LogManager.getLogger(EventData.class);
     private static final String EVENTS_DIR_PATH = "events";
     private static final String CONFIG_DIR_PATH = EVENTS_DIR_PATH + "/config";
     private static final String PLAYERS_DIR_PATH = EVENTS_DIR_PATH + "/players";
@@ -113,6 +114,29 @@ public class EventData {
             } else {
                 return new JsonArray();
             }
+        }
+    }
+
+    /**
+     * Force load data from every file in the players directory for a specific event
+     */
+    public static List<UUID> forceLoadAllPlayerEventData(String event) {
+        synchronized (fileLock) {
+            Path path = Paths.get(PLAYERS_DIR_PATH, event);
+            createDirectories(path);
+            List<UUID> playerData = new ArrayList<>();
+
+            File[] files = path.toFile().listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    String fileName = file.getName();
+                    if (fileName.endsWith(".json")) {
+                        playerData.add(UUID.fromString(fileName.substring(0, fileName.length() - 5)));
+                    }
+                }
+            }
+
+            return playerData;
         }
     }
 
